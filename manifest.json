@@ -2,7 +2,7 @@
     "name": "Vita Mobile Review",
     "short_name": "Vita",
     "description": "Review and correct email categories on mobile",
-    "start_url": "./",
+    "start_url": "/",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#2196F3",
@@ -22,3 +22,4 @@
     ]
 
 }
+
