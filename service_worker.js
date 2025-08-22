@@ -1,4 +1,4 @@
-// service-worker.js - Enables offline functionality
+// service_worker.js - Enables offline functionality
 const CACHE_NAME = 'vita-mobile-v1';
 const urlsToCache = [
     './',
@@ -21,4 +21,5 @@ self.addEventListener('fetch', (event) => {
         caches.match(event.request)
             .then((response) => response || fetch(event.request))
     );
+
 });
