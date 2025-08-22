@@ -1,4 +1,4 @@
-// app.js - Main PWA logic
+// app.js - Main PWA logic with correct field names
 class VitaMobileReview {
     constructor() {
         this.db = null;
@@ -40,7 +40,7 @@ class VitaMobileReview {
             // Load database
             this.db = new this.SQL.Database(uint8Array);
             
-            // Load emails
+            // Load emails - using the correct column names
             const result = this.db.exec(`
                 SELECT * FROM review_queue 
                 ORDER BY category_confidence ASC, project_confidence ASC
@@ -64,8 +64,11 @@ class VitaMobileReview {
                 
                 // Save to IndexedDB for persistence
                 this.saveToIndexedDB(uint8Array);
+            } else {
+                alert('No emails found in database');
             }
         } catch (error) {
+            console.error('Database loading error:', error);
             alert('Error loading database: ' + error.message);
         }
     }
@@ -92,26 +95,37 @@ class VitaMobileReview {
         this.currentIndex = index;
         const email = this.emails[index];
         
+        // Get sender display name
+        const senderDisplay = email.sender_name && email.sender_name !== 'DELETED' 
+            ? email.sender_name 
+            : (email.sender || 'Unknown Sender');
+        
         const html = `
             <div class="email-card">
                 <div class="email-header">
                     <div class="subject">${email.subject}</div>
-                    <div class="sender">From: ${email.sender}</div>
-                    <div class="sender">Date: ${new Date(email.sent_date).toLocaleDateString()}</div>
+                    <div class="sender">From: ${senderDisplay}</div>
+                    <div class="sender">Date: ${new Date(email.received_date || email.sent_date).toLocaleDateString()}</div>
                 </div>
+                
+                ${email.oneline_summary ? `
+                <div style="background: #e3f2fd; padding: 10px; border-radius: 4px; margin: 10px 0;">
+                    <strong>Summary:</strong> ${email.oneline_summary}
+                </div>
+                ` : ''}
                 
                 <div class="analysis">
                     <h4>Current AI Analysis</h4>
-                    <p><strong>Category:</strong> ${email.ai_category} 
-                       <span class="confidence ${this.getConfidenceClass(email.category_confidence)}">
-                           ${email.category_confidence}% confident
+                    <p><strong>Category:</strong> ${email.ai_category || 'Not analyzed'} 
+                       <span class="confidence ${this.getConfidenceClass(email.category_confidence || 0)}">
+                           ${Math.round(email.category_confidence || 0)}% confident
                        </span>
                     </p>
                     <p><em>Reasoning:</em> ${email.category_reasoning || 'None provided'}</p>
                     
-                    <p style="margin-top: 10px;"><strong>Project:</strong> ${email.ai_project || 'None'} 
-                       <span class="confidence ${this.getConfidenceClass(email.project_confidence)}">
-                           ${email.project_confidence}% confident
+                    <p style="margin-top: 10px;"><strong>Project:</strong> ${email.ai_project || email.project || 'None'} 
+                       <span class="confidence ${this.getConfidenceClass(email.project_confidence || 0)}">
+                           ${Math.round(email.project_confidence || 0)}% confident
                        </span>
                     </p>
                     <p><em>Clues:</em> ${email.project_clues || 'None provided'}</p>
@@ -119,10 +133,10 @@ class VitaMobileReview {
                 
                 <div>
                     <span class="toggle-thread" onclick="vitaApp.toggleThread()">
-                        📧 Show Full Thread
+                        📧 Show Full Email
                     </span>
                     <div id="thread-content" class="thread-content" style="display:none;">
-                        ${email.full_thread || 'No thread content'}
+                        ${email.body || email.full_thread || 'No email content'}
                     </div>
                 </div>
                 
@@ -132,7 +146,7 @@ class VitaMobileReview {
                     <div class="field-group">
                         <label>Category:</label>
                         <select id="correct-category">
-                            <option value="">(Keep: ${email.ai_category})</option>
+                            <option value="">(Keep: ${email.ai_category || 'Not analyzed'})</option>
                             ${this.getCategoryOptions()}
                         </select>
                         <textarea id="category-reason" 
@@ -142,7 +156,7 @@ class VitaMobileReview {
                     <div class="field-group">
                         <label>Project:</label>
                         <select id="correct-project">
-                            <option value="">(Keep: ${email.ai_project || 'None'})</option>
+                            <option value="">(Keep: ${email.ai_project || email.project || 'None'})</option>
                             ${this.getProjectOptions()}
                         </select>
                         <textarea id="project-reason" 
@@ -177,13 +191,11 @@ class VitaMobileReview {
         return 'high';
     }
     
-    // Updated app.js with correct categories and one-line summary
-
     getCategoryOptions() {
         // Correct categories from PACategory enum
         const categories = [
             '1.1 Urgent Reply',
-            '1.2 Urgent Task', 
+            '1.2 Urgent Task',
             '1.3 Urgent Info',
             '2.1 High Reply',
             '2.2 High Task',
@@ -199,57 +211,6 @@ class VitaMobileReview {
         
         return categories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
     }
-
-    showEmail(index) {
-        if (index >= this.emails.length) {
-            this.showComplete();
-            return;
-        }
-        
-        this.currentIndex = index;
-        const email = this.emails[index];
-        
-        const html = `
-            <div class="email-card">
-                <div class="email-header">
-                    <div class="subject">${email.subject}</div>
-                    <div class="sender">From: ${email.sender || 'Unknown Sender'}</div>
-                    <div class="sender">Date: ${new Date(email.sent_date).toLocaleDateString()}</div>
-                </div>
-                
-                ${email.oneline_summary ? `
-                <div style="background: #e3f2fd; padding: 10px; border-radius: 4px; margin: 10px 0;">
-                    <strong>Summary:</strong> ${email.oneline_summary}
-                </div>
-                ` : ''}
-                
-                <div class="analysis">
-                    <h4>Current AI Analysis</h4>
-                    <p><strong>Category:</strong> ${email.ai_category} 
-                       <span class="confidence ${this.getConfidenceClass(email.category_confidence)}">
-                           ${email.category_confidence}% confident
-                       </span>
-                    </p>
-                    <p><em>Reasoning:</em> ${email.category_reasoning || 'None provided'}</p>
-                    
-                    <p style="margin-top: 10px;"><strong>Project:</strong> ${email.ai_project || 'None'} 
-                       <span class="confidence ${this.getConfidenceClass(email.project_confidence)}">
-                           ${email.project_confidence}% confident
-                       </span>
-                    </p>
-                    <p><em>Clues:</em> ${email.project_clues || 'None provided'}</p>
-                </div>
-                
-                <div>
-                    <span class="toggle-thread" onclick="vitaApp.toggleThread()">
-                        📧 Show Full Thread
-                    </span>
-                    <div id="thread-content" class="thread-content" style="display:none;">
-                        ${email.full_thread || 'No thread content'}
-                    </div>
-                </div>
-                
-                // ... rest of the HTML remains the same
     
     getProjectOptions() {
         if (this.projects.length === 0) {
@@ -265,7 +226,7 @@ class VitaMobileReview {
         const content = document.getElementById('thread-content');
         const isHidden = content.style.display === 'none';
         content.style.display = isHidden ? 'block' : 'none';
-        event.target.textContent = isHidden ? '📧 Hide Thread' : '📧 Show Full Thread';
+        event.target.textContent = isHidden ? '📧 Hide Email' : '📧 Show Full Email';
     }
     
     approveAndNext() {
@@ -277,8 +238,12 @@ class VitaMobileReview {
             timestamp: new Date().toISOString()
         });
         
+        // Save state
+        this.saveState();
+        
         // Move to next
         this.showEmail(this.currentIndex + 1);
+        this.updateStats();
     }
     
     saveAndNext() {
@@ -304,7 +269,7 @@ class VitaMobileReview {
         const newProject = document.getElementById('correct-project').value;
         if (newProject) {
             correction.project_correction = {
-                original: email.ai_project,
+                original: email.ai_project || email.project,
                 corrected: newProject,
                 user_reasoning: document.getElementById('project-reason').value
             };
@@ -324,11 +289,13 @@ class VitaMobileReview {
         
         // Move to next
         this.showEmail(this.currentIndex + 1);
+        this.updateStats();
     }
     
     skipEmail() {
         // Just move to next without saving anything
         this.showEmail(this.currentIndex + 1);
+        this.updateStats();
     }
     
     showComplete() {
@@ -376,6 +343,7 @@ class VitaMobileReview {
         // Clear corrections after export
         this.corrections = [];
         this.saveState();
+        this.updateStats();
     }
     
     updateStats() {
@@ -389,18 +357,22 @@ class VitaMobileReview {
     
     // IndexedDB for persistence
     async saveToIndexedDB(data) {
-        const db = await this.openDB();
-        const tx = db.transaction(['database'], 'readwrite');
-        await tx.objectStore('database').put({
-            id: 'current',
-            data: data,
-            timestamp: new Date()
-        });
+        try {
+            const db = await this.openDB();
+            const tx = db.transaction(['database'], 'readwrite');
+            await tx.objectStore('database').put({
+                id: 'current',
+                data: data,
+                timestamp: new Date()
+            });
+        } catch (error) {
+            console.error('Error saving to IndexedDB:', error);
+        }
     }
     
     async saveState() {
         localStorage.setItem('vita_corrections', JSON.stringify(this.corrections));
-        localStorage.setItem('vita_current_index', this.currentIndex);
+        localStorage.setItem('vita_current_index', this.currentIndex.toString());
     }
     
     async loadSavedState() {
@@ -412,6 +384,11 @@ class VitaMobileReview {
         const index = localStorage.getItem('vita_current_index');
         if (index) {
             this.currentIndex = parseInt(index);
+        }
+        
+        // Update stats if we have saved state
+        if (this.corrections.length > 0) {
+            this.updateStats();
         }
     }
     
@@ -436,5 +413,4 @@ class VitaMobileReview {
 let vitaApp;
 document.addEventListener('DOMContentLoaded', () => {
     vitaApp = new VitaMobileReview();
-
 });
