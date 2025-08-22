@@ -22,7 +22,7 @@ class VitaMobileReview {
         
         // Register service worker for offline capability
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('service-worker.js');
+            navigator.serviceWorker.register('service_worker.js');
         }
         
         // Load saved state if exists
@@ -414,3 +414,4 @@ let vitaApp;
 document.addEventListener('DOMContentLoaded', () => {
     vitaApp = new VitaMobileReview();
 });
+
