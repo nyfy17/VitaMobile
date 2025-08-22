@@ -177,21 +177,79 @@ class VitaMobileReview {
         return 'high';
     }
     
+    // Updated app.js with correct categories and one-line summary
+
     getCategoryOptions() {
+        // Correct categories from PACategory enum
         const categories = [
             '1.1 Urgent Reply',
-            '1.2 Urgent Task',
-            '2.1 Reply',
-            '2.2 Task',
-            '2.3 Research Task',
-            '3.1 Reference Info',
-            '3.2 Newsletter',
-            '4.1 Resolved',
-            '4.2 Acknowledged'
+            '1.2 Urgent Task', 
+            '1.3 Urgent Info',
+            '2.1 High Reply',
+            '2.2 High Task',
+            '2.3 High Info',
+            '3.1 Med Reply',
+            '3.2 Med Task',
+            '3.3 Med Info',
+            '4.1 Low Reply',
+            '4.2 Delegate',
+            '5.1 Archive',
+            '5.2 Delete'
         ];
         
         return categories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
     }
+
+    showEmail(index) {
+        if (index >= this.emails.length) {
+            this.showComplete();
+            return;
+        }
+        
+        this.currentIndex = index;
+        const email = this.emails[index];
+        
+        const html = `
+            <div class="email-card">
+                <div class="email-header">
+                    <div class="subject">${email.subject}</div>
+                    <div class="sender">From: ${email.sender || 'Unknown Sender'}</div>
+                    <div class="sender">Date: ${new Date(email.sent_date).toLocaleDateString()}</div>
+                </div>
+                
+                ${email.oneline_summary ? `
+                <div style="background: #e3f2fd; padding: 10px; border-radius: 4px; margin: 10px 0;">
+                    <strong>Summary:</strong> ${email.oneline_summary}
+                </div>
+                ` : ''}
+                
+                <div class="analysis">
+                    <h4>Current AI Analysis</h4>
+                    <p><strong>Category:</strong> ${email.ai_category} 
+                       <span class="confidence ${this.getConfidenceClass(email.category_confidence)}">
+                           ${email.category_confidence}% confident
+                       </span>
+                    </p>
+                    <p><em>Reasoning:</em> ${email.category_reasoning || 'None provided'}</p>
+                    
+                    <p style="margin-top: 10px;"><strong>Project:</strong> ${email.ai_project || 'None'} 
+                       <span class="confidence ${this.getConfidenceClass(email.project_confidence)}">
+                           ${email.project_confidence}% confident
+                       </span>
+                    </p>
+                    <p><em>Clues:</em> ${email.project_clues || 'None provided'}</p>
+                </div>
+                
+                <div>
+                    <span class="toggle-thread" onclick="vitaApp.toggleThread()">
+                        📧 Show Full Thread
+                    </span>
+                    <div id="thread-content" class="thread-content" style="display:none;">
+                        ${email.full_thread || 'No thread content'}
+                    </div>
+                </div>
+                
+                // ... rest of the HTML remains the same
     
     getProjectOptions() {
         if (this.projects.length === 0) {
@@ -378,4 +436,5 @@ class VitaMobileReview {
 let vitaApp;
 document.addEventListener('DOMContentLoaded', () => {
     vitaApp = new VitaMobileReview();
+
 });
