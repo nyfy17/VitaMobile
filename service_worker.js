@@ -1,10 +1,10 @@
 // service-worker.js - Enables offline functionality
 const CACHE_NAME = 'vita-mobile-v1';
 const urlsToCache = [
-    '/',
-    '/index.html',
-    '/app.js',
-    '/manifest.json',
+    './',
+    './index.html',
+    './app.js',
+    './manifest.json',
     'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js',
     'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.wasm'
 ];
